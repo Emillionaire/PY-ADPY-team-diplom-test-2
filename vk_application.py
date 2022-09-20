@@ -1,10 +1,8 @@
-from pprint import pprint
-
 import requests
-
 import db_application
 
 
+# get user info
 def get_user_info(**kwargs):
     params = {
         'fields': 'bdate, city, sex',
@@ -32,10 +30,10 @@ def get_user_info(**kwargs):
         'bdate': bdate,
         'sex': result['response'][0]['sex']
     }
-    print(result_dict)
     return result_dict
 
 
+# get match person
 def get_match_persons(conn, **kwargs):
     user_id = kwargs['user_id']
     result = db_application.take_user_info(conn, user_id)
@@ -68,19 +66,14 @@ def get_match_persons(conn, **kwargs):
     match_list = []
     for person in result['response']['items']:
         if 'city' in person.keys() and 'bdate' in person.keys() and 'sex' in person.keys():
-            if person['city']['id'] == city and int(person['bdate'].split('.')[2]) == bdate and person['sex'] == target_sex:
+            if person['city']['id'] == city and int(person['bdate'].split('.')[2]) == bdate and person[
+                'sex'] == target_sex:
                 match_list.append(person)
 
     db_application.add_match_persons(conn, user_id, match_list)
 
 
-def get_persons_for_show(conn, id_vk_user):
-    user_match = db_application.take_user_match(conn, id_vk_user)
-    user_reviewed = db_application.take_user_reviewed(conn, id_vk_user)
-    result = [i for i in user_match if i not in user_reviewed]
-    return result
-
-
+# get match person info
 def get_match_info(conn, person_id, VK_user_token, URL_get):
     params = {
         'fields': 'bdate, city, sex',
@@ -90,10 +83,10 @@ def get_match_info(conn, person_id, VK_user_token, URL_get):
     }
 
     result = requests.get(URL_get, params=params).json()
-    print(result)
     return result
 
 
+# get favorite person info
 def get_favorite_info(id_vk_user, VK_user_token, URL_get):
     params = {
         'fields': 'bdate, city, sex',
@@ -106,6 +99,7 @@ def get_favorite_info(id_vk_user, VK_user_token, URL_get):
     return result
 
 
+# get best photo of person
 def get_photos(id_vk_match_person, VK_user_token, URL_get_photo):
     params = {
         'user_ids': id_vk_match_person,
@@ -115,24 +109,28 @@ def get_photos(id_vk_match_person, VK_user_token, URL_get_photo):
         'album_id': 'profile',
         'extended': '1',
         'count': '999',
-        }
+    }
     result = requests.get(URL_get_photo, params=params)
-    photo_dict = {}
-    photo_list = []
-    result = result.json()['response']['items']
-    for photos in result:
-        like = photos['likes']['count']
-        for photo in photos['sizes']:
-            photo['likes'] = like
-            photo['id'] = photos['id']
-            photo['owner_id'] = photos['owner_id']
-            f_photo = {key: photo[key] for key in photo if key not in ['height', 'width']}
-            photo_dict = {**photo_dict, **f_photo}
-        photo_list.append([*photo_dict.values()])
-        photo_list.sort(key=lambda i: i[2], reverse=True)
-    return photo_list
+    if 'response' in result.json():
+        photo_dict = {}
+        photo_list = []
+        result = result.json()['response']['items']
+        for photos in result:
+            like = photos['likes']['count']
+            for photo in photos['sizes']:
+                photo['likes'] = like
+                photo['id'] = photos['id']
+                photo['owner_id'] = photos['owner_id']
+                f_photo = {key: photo[key] for key in photo if key not in ['height', 'width']}
+                photo_dict = {**photo_dict, **f_photo}
+            photo_list.append([*photo_dict.values()])
+            photo_list.sort(key=lambda i: i[2], reverse=True)
+        return photo_list
+    else:
+        return None
 
 
+# get id city using text name city
 def get_city(city, VK_user_token, URL_get_city):
     params = {
         'q': city,
