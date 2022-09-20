@@ -1,11 +1,10 @@
-# START FUNCTION
-# clear db
 import psycopg2
+import vk_application
 from psycopg2.extras import DictCursor
 
-import vk_application
 
-
+# START FUNCTION
+# clear db
 def reset_db(conn):
     delete_tables = """
         DROP SCHEMA public CASCADE;
@@ -223,3 +222,11 @@ def take_user_favorite(conn, id_vk_user):
         for id in result:
             fav_list.append(id[0])
         return fav_list
+
+
+# get list persons from match, without reviewed
+def get_persons_for_show(conn, id_vk_user):
+    user_match = take_user_match(conn, id_vk_user)
+    user_reviewed = take_user_reviewed(conn, id_vk_user)
+    result = [i for i in user_match if i not in user_reviewed]
+    return result
